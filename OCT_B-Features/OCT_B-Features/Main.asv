@@ -1,0 +1,133 @@
+% PERFORM THE 1D & 2D FOURIER FRACTAL ANALYSIS ON B-SCAN (IMAGE)
+% WEI GAO, NINGBO UNIVERSITY OF TECHNOLOGYS
+% LAST MODIFIED DATE: 8/15/2016
+
+function Main()
+
+% INPUT
+%   I0      -  original image
+
+%--------------------------------------------------------------------------
+% 7 methods for calculating the fractal dimension as the following:
+% the 1D box counting method (along the vertical direction)
+% the 1D box counting method (along the horizontal direction)
+% the 2D box counting method
+% the 1D Fourier fractal analysis (along the vertical direction)
+% the 1D Fourier fractal analysis (along the horizontal direction)
+% the 2D Fourier fractal analysis
+% the 2D differential box counting method
+
+% strNum = {'000','025','050','075','100','125','150','175','200','225','250','275','300','325','350','375','400','425','450','475'};
+strNum = {'000','025','040','050','075','080','100','125','140','150','175','180','200','225','240','250','275','280','300','325','340','350','375','380','400','425','440','450','475','480'};
+
+Le = length(strNum);
+
+FD = zeros(Le,7);
+TT = zeros(Le,7);
+% 
+for k = 1:Le
+    
+    str = strcat('scan',strNum{k},'.txt');
+    
+    I0 = load(str);
+
+    I0 = I0(:,1:600);
+
+    I0 = I0';
+
+    bn = mean(mean(I0(30:50,:)));
+    Ib = I0 - bn;
+    I = Ib;
+
+    % I = I0;
+    % I(I<30) = 30;
+    % I(I>60) = 60;
+
+    % Iw = wiener2(I);
+    % Im = medfilt2(I);
+    % Iz = real(Func_Complexdiff(I,15,10,pi/30,0.2));
+    Iz = Func_FzdII(I,15,0.25,2);
+
+    %--------------------------------------------------------------------------
+    %  plot the denoising image
+
+    % figure;
+    % subplot(2,1,1); imagesc(I0);
+    % subplot(2,1,2); imagesc(Iz);
+    % colormap(gray(256));
+
+    %--------------------------------------------------------------------------
+    %  perform the fractal analysis
+
+    % after denoise
+    % [Rt] = Func_Rois2(Iz,Px,Py,Sx,Sy);
+   
+    [Rt]=Iz;
+    [r c] = size(Rt);
+
+
+%     % 1D box counting method
+%     tic;
+%     tem1 = zeros(1,c);
+%     for j = 1:c
+%         [tem1(j)] = Func_BCCOUNT(Rt(:,j)); % along the vertical direction
+%     end
+%     FD(k,1) = mean(tem1);
+%     toc;
+%     TT(k,1) = toc;
+% 
+%     tic;
+%     tem2 = zeros(1,r);
+%     for i = 1:r
+%         [tem2(i)] = Func_BCCOUNT(Rt(i,:)); % along the horizontal direction 
+%     end
+%     FD(k,2) = mean(tem2);
+%     toc;
+%     TT(k,2) = toc;
+% 
+%     % 2D box counting method
+%     tic;
+%     [FD(k,3)] = Func_BCCOUNT(Rt); 
+%     toc;
+%     TT(k,3) = toc;
+
+    % 1d Fourier fractal analysis
+    tic;
+    tem3 = zeros(1,c);
+    for j = 1:c
+        [tem3(j)] = Func_PS1D(Rt(:,j)); % along the vertical direction
+    end
+    FD(k,4) = mean(tem3);
+    toc;
+    TT(k,4) = toc;
+
+    tic;
+    tem4 = zeros(1,r);
+    for i = 1:r
+        [tem4(i)] = Func_PS1D(Rt(i,:)); % along the horizontal direction
+    end
+    FD(k,5) = mean(tem4);
+    toc;
+    TT(k,5) = toc;
+
+    % 2d Fourier fractal analysis
+    tic;
+    [FD(k,6)] = Func_PS2D(Rt);
+    toc;
+    TT(k,6) = toc;
+
+    % 2d differential box counting method
+    tic;
+    [FD(k,7)] = Func_DBC(Rt);
+    toc;
+    TT(k,7) = toc;
+    
+end
+
+%--------------------------------------------------------------------------
+% output
+
+xlswrite('test.xls',FD,'Fractal','B2');
+xlswrite('test.xls',TT,'Time','B2');
+
+end
