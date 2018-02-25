@@ -1,0 +1,120 @@
+# Размер изображений
+img_rows, img_cols = 512, 500
+#Размер обучающего множества
+train_count = 3328
+
+##############################################################################
+from PIL import Image
+import numpy as np
+import os
+os.chdir('D:\\OCTImageProcessing\\OCTdeepLearning')
+path1='SetDNNCopy'
+path2='SetDNNCopy'
+#path1='SetDNNTest'
+#path2='SetDNNTest'
+classes=os.listdir(path2)
+x=[]
+y=[]
+ha=-1
+for fol in classes:
+    ha = ha+1
+    print(fol)
+    imgfiles=os.listdir(path2+'\\'+fol);
+    for img in imgfiles:
+        im=Image.open(path2+'\\'+fol+'\\'+img);
+        im=im.convert('L')
+        imrs=im.resize((img_rows,img_cols))
+        imrs = np.array(imrs)
+        x.append(imrs)
+        y.append(ha)
+x=np.array(x);
+x = np.reshape(x, (train_count, img_rows*img_cols)).astype('float32')
+x /= 255
+y=np.array(y);
+
+print(x)
+print(y)
+
+####################################################################################
+
+from PIL import Image
+import numpy as np
+import os
+os.chdir('D:\\OCTImageProcessing\\OCTdeepLearning')
+path1='SetDNNTest'
+classes=os.listdir(path1)
+xt=[]
+yt=[]
+ha=-1
+for fol in classes:
+    ha=ha+1
+    print(fol)
+    imgfiles=os.listdir(path1+'\\'+fol);
+    for img in imgfiles:
+        im=Image.open(path1+'\\'+fol+'\\'+img);
+        im=im.convert('L')
+        imrs=im.resize((img_rows,img_cols))
+        imrs = np.array(imrs)
+        xt.append(imrs)
+        yt.append(ha)
+xt=np.array(x);
+xt = np.reshape(xt, (train_count, img_rows*img_cols)).astype('float32')
+xt /= 255
+yt=np.array(y);
+
+print(xt)
+print(yt)
+####################################################################################
+import numpy
+#from keras.datasets import cifar10
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Activation
+from keras.layers import Dropout
+from keras.layers.convolutional import Conv2D, MaxPooling2D
+from keras.utils import np_utils
+from keras.optimizers import SGD
+
+# Задаем seed для повторяемости результатов
+numpy.random.seed(42)
+
+# Загружаем данные
+(X_train, y_train), (X_test, y_test) = (x, y),(xt, yt)
+# Размер мини-выборки
+batch_size = 50
+# Количество классов изображений
+nb_classes = 4
+# Количество эпох для обучения
+nb_epoch = 20
+
+# Количество каналов в изображении: RGB или gray
+img_channels = 1
+
+
+# Нормализуем данные
+#X_train = X_train.astype('float32')
+#X_test = X_test.astype('float32')
+#X_train /= 255
+#X_test /= 255
+
+# Преобразуем метки в категории
+Y_train = np_utils.to_categorical(y_train, nb_classes)
+Y_test = np_utils.to_categorical(y_test, nb_classes)
+
+model = Sequential()
+#input_shape=(1,256000)
+# Добавляем уровни сети
+model.add(Dense(batch_size, input_dim=img_rows*img_cols, activation="relu", kernel_initializer="normal"))
+model.add(Dense(600, activation="relu", kernel_initializer="normal"))
+model.add(Dense(nb_classes, activation="softmax", kernel_initializer="normal"))
+
+# Компилируем модель
+model.compile(loss="categorical_crossentropy", optimizer="SGD", metrics=["accuracy"])
+
+print(model.summary())
+
+# Обучаем сеть
+model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch, validation_split=0.2, verbose=2)
+
+# Оцениваем качество обучения сети на тестовых данных
+scores = model.evaluate(X_test, Y_test, verbose=0)
+print("Точность работы на тестовых данных: %.2f%%" % (scores[1]*100))
